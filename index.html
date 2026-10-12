@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Park Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f1f8e9;--card:#fff;--tx:#1b3a1e;--ac:#2e7d32;--ac2:#ffb300;--mu:#6b7f6c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10200f;--card:#1b2f1b;--tx:#e6f2e2;--ac:#66bb6a;--mu:#9bb39b}}
+:root[data-theme="dark"]{--bg:#10200f;--card:#1b2f1b;--tx:#e6f2e2;--ac:#66bb6a;--mu:#9bb39b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px system-ui,sans-serif;padding-bottom:70px}
+header{background:var(--ac);color:#fff;padding:12px 16px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+header b{font-size:18px}.bar{height:8px;background:#0003;border-radius:4px;margin-top:6px}.bar i{display:block;height:100%;background:var(--ac2);border-radius:4px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 12px}.chip{padding:6px 12px;border-radius:16px;border:1px solid var(--ac);background:none;color:var(--tx);white-space:nowrap;font-size:14px}.chip.on{background:var(--ac);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 12px}
+.c{background:var(--card);border-radius:14px;padding:12px;text-align:center;border:2px solid transparent;font-size:14px;color:var(--tx)}.c.f{border-color:var(--ac2)}.c span{font-size:34px;display:block}.c small{color:var(--mu)}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid #0002;padding-bottom:env(safe-area-inset-bottom,0px)}nav button{flex:1;padding:12px;border:0;background:none;font-size:15px;color:var(--tx)}nav .on{color:var(--ac);font-weight:700}
+.modal{position:fixed;inset:0;background:#000a;display:flex;align-items:flex-end;z-index:9}.sheet{background:var(--card);width:100%;max-height:90%;overflow:auto;border-radius:20px 20px 0 0;padding:20px;text-align:center}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:12px;padding:12px 18px;font-size:16px;margin:6px 4px;display:inline-block}.btn.g{background:none;color:var(--mu)}
+.q{display:block;width:100%;margin:6px 0;padding:12px;border-radius:10px;border:2px solid var(--ac);background:none;color:var(--tx);font-size:15px}
+.big{font-size:70px}img.p{width:100%;max-height:200px;object-fit:cover;border-radius:12px}
+.pad{padding:12px}.shop{display:flex;justify-content:space-between;align-items:center;background:var(--card);border-radius:12px;padding:10px 14px;margin-bottom:8px}
+.mapw{position:relative;margin:8px 12px;border-radius:16px;overflow:hidden;aspect-ratio:360/440;background:#7cb342}.mapw svg{position:absolute;inset:0;width:100%;height:100%}
+.sp,.me{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;line-height:1}.sp{font-size:30px;animation:wig 1.4s ease-in-out infinite}.sp.r{filter:drop-shadow(0 0 6px gold) drop-shadow(0 0 10px gold)}
+.me{font-size:34px;transition:left .6s,top .6s;z-index:3;pointer-events:none}
+@keyframes wig{50%{transform:translate(-50%,-50%) rotate(12deg) scale(1.1)}}@keyframes pop{0%{transform:scale(.2) translateY(40px)}70%{transform:scale(1.25)}100%{transform:scale(1)}}.pp{display:inline-block;font-size:90px;animation:pop .6s}.sil{filter:brightness(0) opacity(.75)}
+</style></head><body>
+<header><div class="row"><b id="av"></b><span id="pts"></span></div><div class="row" style="font-size:13px"><span id="lv"></span><span id="cnt"></span></div><div class="bar"><i id="xp"></i></div></header>
+<div id="main"></div>
+<nav><button data-t="p" class="on">🗺️ Map</button><button data-t="g">📖 Guide</button><button data-t="q">🧠 Quiz</button><button data-t="s">🛍️ Shop</button><button data-t="m">🏆 Me</button></nav>
+<div id="modal"></div>
+<script>
+const D=`Canada Goose|🪿|Birds|Flies in a V shape and many now live in Maryland all year.
+Mallard|🦆|Birds|Only the male has a shiny green head; she says 'quack'.
+Wood Duck|🦆|Birds|Nests in tree holes; ducklings jump out when only a day old.
+Great Blue Heron|🐦|Birds|Stands still in shallows to spear fish with its bill.
+Green Heron|🐦|Birds|Drops bait on the water to lure fish: a tool-using bird!
+Belted Kingfisher|🐦|Birds|Dives headfirst into water and nests in tunnels in banks.
+Double-crested Cormorant|🐦|Birds|Dives for fish, then spreads its wings to dry.
+Osprey|🦅|Birds|A fish-eating hawk that hovers, then plunges into the water.
+Bald Eagle|🦅|Birds|Our national bird; it builds nests that can weigh over a ton.
+Red-tailed Hawk|🦅|Birds|Circles overhead looking for mice and chipmunks.
+Turkey Vulture|🦅|Birds|Finds food by smell and cleans up dead animals.
+Barred Owl|🦉|Birds|Its call sounds like 'Who cooks for you?'
+Northern Cardinal|🐦|Birds|Males are bright red; both sexes sing.
+Blue Jay|🐦|Birds|Hides acorns, which helps oak forests spread.
+American Robin|🐦|Birds|Tugs earthworms out of the lawn after rain.
+Carolina Chickadee|🐦|Birds|Says its name: chick-a-dee-dee-dee.
+Tufted Titmouse|🐦|Birds|Has a gray crest and stores seeds for winter.
+White-breasted Nuthatch|🐦|Birds|Walks down tree trunks headfirst.
+Downy Woodpecker|🐦|Birds|Our smallest woodpecker, it taps for hidden insects.
+Red-bellied Woodpecker|🐦|Birds|Has a red head patch and a barely visible pink belly.
+Pileated Woodpecker|🐦|Birds|Crow-sized, it carves rectangular holes in dead trees.
+Northern Flicker|🐦|Birds|A woodpecker that often feeds on ants on the ground.
+Eastern Bluebird|🐦|Birds|Nests in boxes and holes, and eats insects and berries.
+Red-winged Blackbird|🐦|Birds|Males flash red shoulder patches from cattails.
+American Goldfinch|🐦|Birds|Males turn bright yellow in summer and eat thistle seeds.
+Carolina Wren|🐦|Birds|A small, loud wren with a white eyebrow stripe.
+Mourning Dove|🕊️|Birds|Its soft coo sounds sad; its wings whistle in flight.
+Ruby-throated Hummingbird|🐦|Birds|Beats its wings about 50 times a second.
+Song Sparrow|🐦|Birds|A streaky brown bird that sings from low perches.
+Gray Catbird|🐦|Birds|Mews like a kitten and can copy other sounds.
+Northern Mockingbird|🐦|Birds|Mimics many bird calls, sometimes all night.
+Eastern Phoebe|🐦|Birds|Wags its tail and catches flying insects.
+Barn Swallow|🐦|Birds|Has a forked tail and builds mud nests under bridges.
+American Crow|🐦|Birds|A very smart black bird that solves puzzles.
+Wild Turkey|🦃|Birds|Big woodland bird that can fly short distances.
+Ring-billed Gull|🐦|Birds|Has a black ring on its yellow bill.
+White-tailed Deer|🦌|Mammals|Flashes its white tail as an alarm signal.
+Eastern Gray Squirrel|🐿️|Mammals|Buries nuts and forgets some, which grow into trees.
+Eastern Chipmunk|🐿️|Mammals|Carries food in its stretchy cheek pouches.
+Groundhog|🦫|Mammals|Digs burrows and hibernates all winter.
+Eastern Cottontail|🐇|Mammals|Rests in shallow dips and freezes to hide.
+Red Fox|🦊|Mammals|Pounces on mice, listening for them under snow or grass.
+Raccoon|🦝|Mammals|Has sensitive paws and is active at night.
+Virginia Opossum|🐀|Mammals|North America's only marsupial; babies ride on mom's back.
+Striped Skunk|🦨|Mammals|Warns with stomps and a raised tail before it sprays.
+Muskrat|🐀|Mammals|Builds dome houses of reeds in ponds.
+Big Brown Bat|🦇|Mammals|Eats beetles and other bugs at night.
+Eastern Painted Turtle|🐢|Reptiles|Basks on logs, often in stacks.
+Common Snapping Turtle|🐢|Reptiles|Lurks on the bottom with a powerful bite.
+Eastern Box Turtle|🐢|Reptiles|Can close its shell like a box; some live over 50 years.
+Red-eared Slider|🐢|Reptiles|A pet turtle that can harm natives if released into the wild.
+Northern Water Snake|🐍|Reptiles|Harmless to people but often mistaken for a venomous snake.
+Eastern Garter Snake|🐍|Reptiles|A striped snake that eats worms and frogs.
+Common Five-lined Skink|🦎|Reptiles|Young ones have a bright blue tail.
+American Bullfrog|🐸|Amphibians|The biggest frog in Maryland, with a deep 'jug-o-rum' call.
+Green Frog|🐸|Amphibians|Its call sounds like a plucked banjo string.
+Spring Peeper|🐸|Amphibians|Tiny frog with a loud peep and an X on its back.
+American Toad|🐸|Amphibians|Bumpy skin and loves to eat garden pests.
+Red-backed Salamander|🦎|Amphibians|Lives under logs and breathes through its skin.
+Tadpole|🐸|Amphibians|A baby frog that breathes with gills.
+Bluegill|🐟|Water Life|A common sunfish with a dark spot on its gill flap.
+Largemouth Bass|🐟|Water Life|Sits in weeds and ambushes smaller fish.
+Crayfish|🦞|Water Life|A freshwater crustacean that hides under rocks.
+Water Strider|🪰|Water Life|Walks on the water's surface.
+Freshwater Mussel|🐚|Water Life|Filters water to make it cleaner.
+Pond Algae|🌿|Water Life|Tiny plant-like life at the base of the food web.
+Monarch Butterfly|🦋|Bugs|Migrates all the way to Mexico for the winter.
+Eastern Tiger Swallowtail|🦋|Bugs|A big yellow butterfly with tiger stripes.
+Black Swallowtail|🦋|Bugs|Its caterpillars eat parsley and Queen Anne's lace.
+Spicebush Swallowtail|🦋|Bugs|Its caterpillar has fake eye spots to scare birds.
+Mourning Cloak|🦋|Bugs|Lives through winter as an adult butterfly.
+Firefly|🪲|Bugs|Glows to find mates; each species has its own flash pattern.
+Bumble Bee|🐝|Bugs|Shakes flowers loose to collect pollen.
+Honeybee|🐝|Bugs|Visits flowers and communicates with a waggle dance.
+Common Whitetail Dragonfly|🪰|Bugs|Males have a white abdomen and hunt over ponds.
+Damselfly|🪰|Bugs|Holds its wings along its body when resting.
+Ladybug|🐞|Bugs|Eats aphids that harm plants.
+Praying Mantis|🦗|Bugs|Waits motionless, then snatches prey.
+Katydid|🦗|Bugs|Green and leaf-shaped; sings at night.
+Field Cricket|🦗|Bugs|Chirps by rubbing its wings together.
+Annual Cicada|🪲|Bugs|Hums in summer; nymphs live underground for years.
+Garden Spider|🕷️|Bugs|Spins big webs and often has a zigzag in the middle.
+Millipede|🐛|Bugs|Has many legs and recycles dead leaves.
+Earthworm|🪱|Bugs|Mixes soil and recycles leaves.
+Black-eyed Susan|🌼|Plants|Maryland's state flower, a magnet for pollinators.
+Common Milkweed|🌸|Plants|The only food for monarch caterpillars.
+Goldenrod|🌼|Plants|Fall flowers that feed bees and butterflies; it doesn't cause hay fever.
+Joe-Pye Weed|🌸|Plants|Tall pink flowers that butterflies love.
+Queen Anne's Lace|🌼|Plants|Wild carrot with lacy white flowers.
+Jewelweed|🌼|Plants|Seed pods pop open when touched.
+Mayapple|🌿|Plants|An umbrella-like leaf on woodland floors.
+Christmas Fern|🌿|Plants|Stays green all winter; it reproduces by spores.
+Cattail|🌾|Plants|Grows in wet spots and shelters red-winged blackbirds.
+Water Lily|🪷|Plants|Floating leaves shade fish and frogs.
+Virginia Creeper|🍃|Plants|Five-leaflet vine with fall red leaves.
+Poison Ivy|🍃|Plants|'Leaves of three, let it be!' Birds can eat its berries.
+Pokeweed|🌿|Plants|Dark berries feed birds but are not safe for people.
+White Clover|☘️|Plants|Adds nitrogen to soil and feeds bees.
+Dandelion|🌼|Plants|Early flowers feed pollinators; seeds fly on tiny parachutes.
+Moss|🌱|Plants|Tiny plants that soak up water like sponges.
+Lichen|🍂|Plants|A team of fungus and algae living together.
+Mushroom|🍄|Plants|Fungi recycle dead wood and leaves.
+Japanese Honeysuckle|🌿|Invasive Plants|An invader from Asia that smothers native plants.
+Garlic Mustard|🌿|Invasive Plants|An invasive weed that hurts forest wildflowers.
+Multiflora Rose|🌹|Invasive Plants|A thorny invader that crowds out native shrubs.
+Tulip Poplar|🌳|Trees|One of the tallest eastern trees, with tulip-shaped flowers.
+White Oak|🌳|Trees|Maryland's state tree; its acorns feed deer, turkey, and jays.
+Northern Red Oak|🌳|Trees|Its acorns feed wildlife; leaves turn red in fall.
+Red Maple|🌳|Trees|Has red buds, flowers, and fall leaves.
+American Beech|🌳|Trees|Smooth gray bark and tasty beechnuts.
+American Sycamore|🌳|Trees|Peeling white-and-brown bark and big leaves.
+Black Walnut|🌳|Trees|Drops thick-husked nuts that squirrels bury.
+American Holly|🌲|Trees|Spiny evergreen with red berries that birds eat.
+Eastern Red Cedar|🌲|Trees|Berry-like cones feed waxwings and robins.
+Loblolly Pine|🌲|Trees|Long needles in bundles of three.
+Sweetgum|🌳|Trees|Spiky seed balls and star-shaped leaves.
+Flowering Dogwood|🌸|Trees|Spring bracts look like petals; red berries feed birds.
+Eastern Redbud|🌸|Trees|Pink flowers burst from bare branches in spring.
+Sassafras|🌳|Trees|Has leaves in three shapes: oval, mitten, and three-lobed.
+Shagbark Hickory|🌳|Trees|Bark peels in shaggy strips; bats roost behind it.
+Weeping Willow|🌳|Trees|Drooping branches love lakeside soil.
+Tree Hole|🕳️|Habitats|A home for owls, squirrels, woodpeckers, and bats.
+Fallen Log|🪵|Habitats|Dead wood feeds fungi, insects, and salamanders.
+Leaf Litter|🍂|Habitats|Fallen leaves make soil and hide tiny creatures.
+Acorns|🌰|Habitats|Oak seeds that feed many animals.
+Bird Nest|🪺|Habitats|Built of twigs, mud, or grass for baby birds.
+Spider Web|🕸️|Habitats|Silk traps insects.
+Feather|🪶|Habitats|Keeps birds warm and helps them fly.
+Lake Shoreline|💧|Habitats|Plants at the edge shelter fish, turtles, and frogs.
+Stream|🌊|Habitats|Moving water that carries nutrients and shelters small creatures.
+Meadow|🌾|Habitats|Open grass and flowers for pollinators and ground-nesting birds.
+Forest Edge|🌲|Habitats|Where woods meet meadow; lots of wildlife is found here.`.split("\n").map((l,i)=>{const[n,e,c,f]=l.split("|");return{id:i,n,e,c,f}});
+const QB=`What does biodiversity mean?|The variety of all living things|How big a park is|How many people visit|Biodiversity is all the different plants, animals, fungi and tiny life in a place.
+Why are bees and butterflies important?|They pollinate flowers|They make soil|They scare pests|Pollinators move pollen so plants can make seeds and fruit.
+What do decomposers like fungi and worms do?|Break down dead things into soil food|Hunt other animals|Make honey|They recycle nutrients so new plants can grow.
+Which is a producer in a food chain?|A plant|A hawk|A fox|Plants make their own food from sunlight.
+What is a habitat?|A home where a living thing finds food and shelter|A kind of food|A weather forecast|Every species needs a habitat to survive.
+Why should we leave fallen logs in the woods?|They shelter insects, salamanders and fungi|They are ugly|They block paths|Dead wood is a home and food for lots of life.
+What is an invasive species?|A non-native species that harms nature|Any rare animal|A bird that migrates|Invasive species spread fast and crowd out natives.
+Why do monarch caterpillars need milkweed?|It is the only plant they eat|It hides them|It is warm|Without milkweed monarchs can't grow up.
+What is a food web?|Many food chains linked together|A spider's web|A grocery list|Animals often eat many things so chains connect into webs.
+What does a native plant do best?|Support local wildlife|Grow only indoors|Need lots of fertilizer|Local animals and insects evolved with native plants.
+Why is a clean pond good for biodiversity?|Frogs, fish and insects need clean water|Ducks hate clean water|It has no plants|Pollution can kill sensitive pond life.
+What happens if a species goes extinct?|It is gone forever and others can be affected|It comes back next year|Nothing ever changes|Extinction is permanent and breaks links in the web.
+How can you help wildlife in the park?|Stay on trails and take only photos|Feed the animals snacks|Pick all the flowers|Leaving wildlife alone keeps animals wild and safe.
+Why shouldn't we release pet turtles into ponds?|They can harm native turtles|Ponds are too cold|Turtles can't swim|Released pets can spread disease and compete with natives.
+What is a pollinator?|An animal that moves pollen between flowers|A water cleaner|A tree trunk|Bees, butterflies, moths, birds and bats can all pollinate.
+Why do trees matter for biodiversity?|They give food, shade and homes|They only make wood|They stop rain|One oak tree can support hundreds of insect species.
+What do we call plants and animals that live in one place together?|An ecosystem|A flavor|A road|An ecosystem includes living things and their surroundings.
+Why do birds eat insects?|Insects are a protein-rich food|They are bored|To clean the air|Many baby birds are fed only insects.
+What does 'native' mean?|Naturally lives in that area|Brought from far away|Very small|Native species belong in the local ecosystem.
+Which helps biodiversity most?|Many kinds of plants and animals|Only one kind of tree|Lots of pavement|A varied area is stronger against problems.
+What is a predator?|An animal that hunts other animals|A plant|A rock|Predators like hawks and foxes keep prey numbers balanced.`.split("\n").map(l=>{const[q,a,b,c,e]=l.split("|");return{q,a,o:[a,b,c],e}});
+let qz=null;
+function qHome(){$("#main").innerHTML=`<div class="pad" style="text-align:center"><div class="big">🧠</div><h2>Biodiversity Challenge</h2><p>5 questions per round. +5 ⭐ for each right answer, +5 more for a 3-in-a-row streak, and a perfect round earns a surprise prize!</p><p>Best score: ${S.best||0}/5 · Right answers: ${S.qa||0}</p><button class="btn" id="go">Start a round</button></div>`;$("#go").onclick=()=>{const g=[...QB].sort(()=>Math.random()-.5).slice(0,3),sp=[...D].sort(()=>Math.random()-.5).slice(0,2).map(d=>({q:"Which one is this? "+d.f,a:d.n,o:[d.n,...D.filter(x=>x.c==d.c&&x.id!=d.id).sort(()=>Math.random()-.5).slice(0,2).map(x=>x.n)],e:"It's the "+d.n+"! "+d.f}));qz={l:[...g,...sp].sort(()=>Math.random()-.5),i:0,sc:0,st:0,g:0};qRun()}}
+function qRun(){const x=qz.l[qz.i],o=[...x.o].sort(()=>Math.random()-.5);$("#main").innerHTML=`<div class="pad"><p style="color:var(--mu)">Question ${qz.i+1} of 5</p><h3>${x.q}</h3>${o.map(t=>`<button class="q" data-a="${t.replace(/"/g,"&quot;")}">${t}</button>`).join("")}<div id="fb"></div></div>`;
+document.querySelectorAll(".q").forEach(b=>b.onclick=()=>{const ok=b.dataset.a==x.a;document.querySelectorAll(".q").forEach(z=>{z.disabled=true;if(z.dataset.a==x.a)z.style.background="#43a04755"});if(!ok)b.style.background="#e5393555";let g=0;if(ok){qz.sc++;qz.st++;g=5+(qz.st>=3?5:0);S.qa=(S.qa||0)+1}else qz.st=0;qz.g+=g;S.pts+=g;S.tot+=g;save();head();
+$("#fb").innerHTML=`<p><b>${ok?"✅ Correct! +"+g+" ⭐":"❌ Not quite. Answer: "+x.a}</b></p><p>${x.e}</p><button class="btn" id="nx">${qz.i<4?"Next":"See results"}</button>`;$("#nx").onclick=()=>{qz.i++;qz.i<5?qRun():qEnd()}})}
+function qEnd(){let sur="";if(qz.sc==5){const b=25;S.pts+=b;S.tot+=b;qz.g+=b;sur="🎁 Perfect round! +25 bonus points!"}S.best=Math.max(S.best||0,qz.sc);save();head();$("#main").innerHTML=`<div class="pad" style="text-align:center"><div class="big">${qz.sc>=4?"🏆":qz.sc>=2?"👍":"🌱"}</div><h2>${qz.sc}/5 correct</h2><p>You earned ${qz.g} ⭐</p><p style="font-size:18px">${sur}</p><button class="btn" id="go2">Play again</button></div>`;$("#go2").onclick=qHome}
+const ZN={woods:[15,20,150,180],meadow:[190,20,155,170],water:[95,295,170,70],edge:[15,215,330,45]},
+CZ={Birds:["woods","meadow","water","edge"],Mammals:["woods","meadow","edge"],Reptiles:["water","edge","woods"],Amphibians:["water","edge"],"Water Life":["water"],Bugs:["meadow","edge","water"],Plants:["meadow","woods","edge"],"Invasive Plants":["edge","meadow"],Trees:["woods"],Habitats:["woods","water","meadow","edge"]},
+rnd=a=>a[Math.floor(Math.random()*a.length)];
+let gp={on:0,id:null,pos:null,sp:[],last:null,h:"any"};
+const mx=(a,b)=>[(b.lon-a.lon)*111320*Math.cos(a.lat*Math.PI/180),(b.lat-a.lat)*110540],dist=(a,b)=>Math.hypot(...mx(a,b));
+const AX=585,AY=1630,SC=1.4,ANC={lat:39.23791,lon:-76.85947},
+LK="675,1040 700,1090 720,1130 745,1160 790,1140 850,1140 900,1170 960,1190 1020,1215 1050,1250 1035,1310 1000,1380 985,1420 900,1415 830,1400 760,1385 700,1360 650,1340 600,1340 560,1350 530,1380 500,1400 480,1385 400,1400 340,1420 280,1430 200,1440 150,1450 60,1430 40,1415 100,1400 180,1360 280,1320 350,1310 410,1300 470,1290 480,1255 530,1240 580,1230 620,1190 660,1160 670,1100",
+PK="500,860 610,820 830,830 830,1000 1060,1000 1185,1120 1185,1560 910,1510 710,1540 720,1600 600,1640 350,1690 120,1920 30,1790 30,1520 70,1250 140,1210 530,1105 520,990 490,960",
+TR="640,1075 700,1180 800,1115 900,1140 1000,1160 1075,1230 1060,1340 1020,1450 900,1460 800,1430 700,1400 600,1385 520,1440 400,1460 280,1470 180,1490 90,1470 50,1430 30,1385 80,1340 200,1300 330,1280 450,1250 520,1210 600,1160",
+MAPS=`<rect x="-600" y="500" width="2400" height="1800" fill="#f3f0f1"/><polygon points="${PK}" fill="#c5eed4"/><polygon points="${LK}" fill="#8fd3f0"/><polygon points="${TR}" fill="none" stroke="#c9a77c" stroke-width="3" stroke-dasharray="1 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M-600 1850 L150 1790 L350 1690 L600 1640 L900 1590 L1800 1500" stroke="#b8c1c9" stroke-width="12" fill="none"/><path d="M595 1640 L600 1900" stroke="#b8c1c9" stroke-width="7" fill="none"/><g font-size="11" fill="#1b5e20" font-family="sans-serif"><text x="760" y="1290" fill="#01579b" font-size="16">Centennial Lake</text><text x="70" y="1395" fill="#01579b" font-size="10">Wildlife Area</text><text x="300" y="1560">South Playground</text><text x="330" y="1672" fill="#555" font-size="9" transform="rotate(-12 330 1672)">Clarksville Pike</text><text x="570" y="1630" font-size="14">📍 Dock / South Entrance</text></g>`;
+function pip(q){const P=LK.split(" ").map(t=>t.split(",").map(Number));let c=0;for(let i=0,j=P.length-1;i<P.length;j=i++){const[xi,yi]=P[i],[xj,yj]=P[j];if((yi>q[1])!=(yj>q[1])&&q[0]<(xj-xi)*(q[1]-yi)/(yj-yi)+xi)c=!c}return c}
+const proj=p=>{const[dx,dy]=mx(gp.far?gp.ref:ANC,p);return[AX+(gp.ox||0)+dx/SC,AY+(gp.oy||0)-dy/SC]};
+function mkG(){const p=gp.pos;for(let k=0;k<15;k++){const a=Math.random()*6.283,r=18+Math.random()*27,lat=p.lat+Math.cos(a)*r/110540,lon=p.lon+Math.sin(a)*r/(111320*Math.cos(p.lat*Math.PI/180)),w=pip(proj({lat,lon})),zs=w?["water"]:["woods","meadow","edge"],pool=D.filter(d=>w?CZ[d.c].includes("water"):CZ[d.c].some(z=>zs.includes(z))&&d.c!="Water Life");if(!pool.length)continue;const un=pool.filter(d=>!S.found[d.id]),d=rnd(un.length&&Math.random()<.75?un:pool);return{t:Math.random()<.12?"g":"s",id:d.id,w,r:Math.random()<.1,lat,lon}}return{t:"g",id:0,w:0,lat:p.lat+1e-4,lon:p.lon}}
+function startGps(){if(!navigator.geolocation)return alert("This device has no GPS.");gp.on=1;gp.id=navigator.geolocation.watchPosition(onPos,e=>{alert("Couldn't get your location. Please allow location access, or use the practice map.");stopGps()},{enableHighAccuracy:true,maximumAge:2000,timeout:20000});mapDraw()}
+function stopGps(){if(gp.id!=null)navigator.geolocation.clearWatch(gp.id);gp={on:0,id:null,pos:null,sp:[],last:null,h:"any"};mapDraw()}
+function onPos(e){const p={lat:e.coords.latitude,lon:e.coords.longitude,acc:e.coords.accuracy};gp.pos=p;
+if(!gp.last||dist(gp.last,p)>25||gp.sp.length<3){if(gp.sp.length<6){gp.sp.push(mkG());}gp.last=p}
+gp.sp=gp.sp.filter(x=>dist(p,x)<150);
+if(!$("#modal").innerHTML){const i=gp.sp.findIndex(x=>!x.ign&&dist(p,x)<=15);if(i>=0){gp.sp[i].ign=1;try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}enc(i,gp.sp);return}}
+if(tab=="p"&&!$("#modal").innerHTML)gpsDraw()}
+function gpsDraw(){const p=gp.pos,m=$("#main");
+if(!p){m.innerHTML=`<div class="pad" style="text-align:center"><div class="big">📡</div><h3>Finding your location...</h3><p>Please allow location access.</p><button class="btn g" id="st">Cancel</button></div>`;$("#st").onclick=stopGps;return}
+if(gp.far===undefined){gp.far=dist(ANC,p)>2500;gp.ref=p}
+const[px,py]=proj(p),W=200;
+m.innerHTML=`<div class="mapw" id="gm" style="aspect-ratio:1"><svg viewBox="${px-W/2} ${py-W/2} ${W} ${W}" preserveAspectRatio="xMidYMid slice">${MAPS}</svg>${gp.sp.map((x,i)=>{const[sx,sy]=proj(x),l=50+(sx-px)/W*100,t=50+(sy-py)/W*100;if(l<3||l>97||t<3||t>97)return"";const d=Math.round(dist(p,x));return`<button class="sp ${x.r?"r":""}" data-i="${i}" style="left:${l}%;top:${t}%">${x.t=="g"?"🎁":x.w?"💧":"🌿"}<small style="display:block;font-size:10px;color:#222;text-shadow:0 0 3px #fff">${d}m</small></button>`}).join("")}<div class="me" style="left:50%;top:50%">${S.av}</div></div>
+<div class="pad" style="text-align:center"><small style="color:var(--mu)">${gp.far?"🧪 Practice walk: you're not at the park, so the map starts you at the dock. ":""}📍 GPS ±${Math.round(p.acc)}m · Walk within 15m of a 🌿💧 to meet it. Stay on trails with a grown-up. Your location stays on this device.</small><br><button class="btn g" id="al">${gp.al?"👆 Tap where you really are":"🎯 My dot is in the wrong place"}</button><button class="btn g" id="st">⏹ Stop GPS</button></div>`;
+$("#st").onclick=stopGps;$("#al").onclick=()=>{gp.al=!gp.al;gpsDraw()};
+$("#gm").onclick=e=>{if(!gp.al||e.target.closest(".sp"))return;const r=$("#gm").getBoundingClientRect();gp.ox=(gp.ox||0)+(px-W/2+(e.clientX-r.left)/r.width*W)-px;gp.oy=(gp.oy||0)+(py-W/2+(e.clientY-r.top)/r.height*W)-py;gp.al=0;gpsDraw()};
+m.querySelectorAll(".sp").forEach(b=>b.onclick=()=>{const x=gp.sp[+b.dataset.i];if(dist(p,x)>25)return alert("Walk closer along the trail! 🥾");x.ign=1;enc(+b.dataset.i,gp.sp)})}
+let mp={sp:[],x:180,y:240,busy:0};
+function mkSp(){const un=D.filter(d=>!S.found[d.id]),pool=un.length&&Math.random()<.75?un:D,d=rnd(pool),z=ZN[rnd(CZ[d.c])];
+return{t:Math.random()<.12?"g":"s",id:d.id,x:z[0]+Math.random()*z[2],y:z[1]+Math.random()*z[3],r:Math.random()<.1}}
+function fill(){while(mp.sp.length<9)mp.sp.push(mkSp())}
+function mapDraw(){if(gp.on)return gpsDraw();fill();const w=document.createElement("div");
+$("#main").innerHTML=`<div class="mapw"><svg viewBox="0 0 360 440"><rect width="360" height="440" fill="#7cb342"/><rect x="185" y="15" width="165" height="180" rx="20" fill="#c5e1a5"/>${[...Array(14)].map((_,i)=>`<circle cx="${200+(i*37)%140}" cy="${35+(i*53)%140}" r="3" fill="${i%2?"#f06292":"#fff176"}"/>`).join("")}${[[40,50],[90,40],[140,70],[60,110],[120,130],[40,170],[100,175],[150,150]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="26" fill="#2e7d32"/>`).join("")}<path d="M30 235 Q180 190 330 235 Q340 270 250 275 Q180 285 100 275 Q20 270 30 235Z" fill="none" stroke="#a1887f" stroke-width="5" stroke-dasharray="2 8" stroke-linecap="round"/><ellipse cx="180" cy="330" rx="110" ry="55" fill="#4fc3f7"/><path d="M180 385 Q200 410 170 440" stroke="#4fc3f7" stroke-width="10" fill="none"/><text x="180" y="334" text-anchor="middle" font-size="12" fill="#01579b">Lake</text><text x="30" y="14" font-size="10" fill="#fff">Woods</text><text x="270" y="14" font-size="10" fill="#33691e">Meadow</text></svg>${mp.sp.map((p,i)=>`<button class="sp ${p.r?"r":""}" data-i="${i}" style="left:${p.x/3.6}%;top:${p.y/4.4}%">${p.t=="g"?"🎁":ZN.water&&p.y>290&&p.x>95&&p.x<265?"💧":"🌿"}</button>`).join("")}<div class="me" style="left:${mp.x/3.6}%;top:${mp.y/4.4}%">${S.av}</div></div><div class="pad" style="text-align:center"><small style="color:var(--mu)">Tap rustling grass 🌿, ripples 💧 and gifts 🎁. Answer correctly to catch! ✨ Glowing = rare (big bonus)</small><br><button class="btn g" id="rf">🔄 Find new spots</button><button class="btn" id="gps">📍 Use my real location</button></div>`;
+document.querySelectorAll(".sp").forEach(b=>b.onclick=()=>{if(mp.busy)return;mp.busy=1;const p=mp.sp[+b.dataset.i];mp.x=p.x;mp.y=p.y;document.querySelector(".me").style.left=p.x/3.6+"%";document.querySelector(".me").style.top=p.y/4.4+"%";setTimeout(()=>{mp.busy=0;enc(+b.dataset.i)},650)});
+$("#gps").onclick=startGps;$("#rf").onclick=()=>{mp.sp=[];mapDraw()}}
+function enc(i,A=mp.sp){const p=A[i],d=D[p.id],g=p.t=="g",useQ=g||Math.random()<.3,qq=useQ?rnd(QB):{q:"Ranger clue: "+d.f+" Who is it?",a:d.n,o:[d.n,...D.filter(x=>x.c==d.c&&x.id!=d.id).sort(()=>Math.random()-.5).slice(0,2).map(x=>x.n)],e:d.f},o=[...qq.o].sort(()=>Math.random()-.5);
+sheet(`<div class="pp ${useQ&&!g?"":"sil"}">${g?"🎁":d.e}</div><h3>${g?"A mystery gift!":p.r?"✨ A RARE creature appeared!":"A wild creature appeared!"}</h3>${useQ&&!g?`<p style="color:var(--mu)">It's a ${d.c.replace(/s$/,"")}! Answer to catch it.</p>`:""}<p><b>${qq.q}</b></p>${o.map(t=>`<button class="q" data-a="${t.replace(/"/g,"&quot;")}">${t}</button>`).join("")}<button class="btn g" id="x">Run away</button>`);
+$("#x").onclick=()=>{close()};document.querySelectorAll(".q").forEach(b=>b.onclick=()=>{const ok=b.dataset.a==qq.a;A.splice(i,1);let g2=0,msg="";
+if(ok){if(g){if(Math.random()<.5||S.owned.length>=SH.length){g2=30;msg="🎁 You opened the gift: +30 bonus points!"}else{const L=SH.map((s,k)=>k).filter(k=>!S.owned.includes(k)),k=rnd(L);S.owned.push(k);msg=`🎁 Surprise prize: free ${SH[k][0]} ${SH[k][1]}!`;g2=10}}else{const nw=!S.found[d.id];g2=(nw?10:3)+(p.r?25:0)+(useQ?0:5);if(nw)S.found[d.id]={};msg=nw?`🎉 New in your Field Guide: ${d.e} <b>${d.n}</b>!`:`You already had ${d.n}. +bonus for practice!`}}
+const old=lvl();S.pts+=g2;S.tot+=g2;if(ok)S.qa=(S.qa||0)+1;save();
+sheet(`<div class="big">${ok?(g?"🎁":d.e):"💨"}</div><h2>${ok?"Caught! 🎯":"It got away!"}</h2><p>${ok?msg:"The answer was: "+qq.a}</p><p>${ok&&!g?"<b>"+d.n+":</b> "+d.f:qq.e||""}</p>${ok?`<h3>+${g2} ⭐</h3>`:""}${lvl()>old?`<h2>🎉 Level up! ${LV[lvl()]}</h2>`:""}<button class="btn" id="x">Keep exploring</button>`);$("#x").onclick=close})}
+const LV=["Seedling","Sprout","Tracker","Ranger","Naturalist","Park Hero","Biodiversity Master"],
+SH=[["🎩","Explorer Hat",30],["🔭","Binoculars",50],["🧢","Ranger Cap",80],["🦸","Hero Cape",120],["👑","Golden Crown",250],["🌈","Rainbow Badge",150],["🐉","Dragon Buddy",300],["⭐","Star Medal",100]],
+CATS=["All",...new Set(D.map(d=>d.c))];
+let S={pts:0,tot:0,found:{},owned:[],av:"🧒"},tab="p",cat="All";
+try{S={...S,...JSON.parse(localStorage.getItem("pe")||"{}")}}catch(e){}
+const save=()=>{try{localStorage.setItem("pe",JSON.stringify(S))}catch(e){}},$=s=>document.querySelector(s),
+lvl=()=>Math.min(Math.floor(S.tot/100),LV.length-1);
+function head(){$("#av").textContent=S.av+" Park Explorer";$("#pts").textContent="⭐ "+S.pts;$("#lv").textContent="Level "+(lvl()+1)+": "+LV[lvl()];
+$("#cnt").textContent=Object.keys(S.found).length+"/"+D.length+" found";$("#xp").style.width=(S.tot%100)+"%"}
+function draw(){head();const m=$("#main");if(tab=="p")return mapDraw();if(tab=="q")return qHome();
+if(tab=="g"){m.innerHTML=`<div class="chips">${CATS.map(c=>`<button class="chip ${c==cat?"on":""}" data-c="${c}">${c}</button>`).join("")}</div><div class="grid">${D.filter(d=>cat=="All"||d.c==cat).map(d=>{const f=S.found[d.id];return`<button class="c ${f?"f":""}" data-i="${d.id}"><span>${f?d.e:"❓"}</span>${f?d.n+" ✅":"???"}<br><small>${d.c}</small></button>`}).join("")}</div>`;
+m.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{cat=b.dataset.c;draw()});m.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>open(+b.dataset.i))}
+if(tab=="s")m.innerHTML=`<div class="pad"><h3>Spend your points!</h3>${SH.map((s,i)=>{const o=S.owned.includes(i);return`<div class="shop"><span>${s[0]} ${s[1]}</span>${o?`<button class="btn" data-e="${i}">${S.av==s[0]?"Wearing":"Wear"}</button>`:`<button class="btn" data-b="${i}">⭐ ${s[2]}</button>`}</div>`}).join("")}</div>`;
+if(tab=="m"){const n=Object.keys(S.found).length,by=CATS.slice(1).map(c=>{const t=D.filter(d=>d.c==c),f=t.filter(d=>S.found[d.id]).length;return`<div class="shop"><span>${c}</span><b>${f}/${t.length}</b></div>`}).join("");
+m.innerHTML=`<div class="pad"><div style="text-align:center"><div class="big">${S.av}</div><h2>${LV[lvl()]}</h2><p>${S.tot} total points · ${n} species found</p></div>${by}<div style="text-align:center"><button class="btn g" id="rs">Reset game</button></div></div>`;
+$("#rs").onclick=()=>{if(confirm("Erase all progress?")){S={pts:0,tot:0,found:{},owned:[],av:"🧒"};save();draw()}}}
+m.querySelectorAll("[data-b]").forEach(b=>b.onclick=()=>{const s=SH[+b.dataset.b];if(S.pts<s[2])return alert("Find more things to earn points!");S.pts-=s[2];S.owned.push(+b.dataset.b);S.av=s[0];save();draw()});
+m.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{S.av=SH[+b.dataset.e][0];save();draw()})}
+const sheet=h=>{$("#modal").innerHTML=`<div class="modal"><div class="sheet">${h}</div></div>`},close=()=>{$("#modal").innerHTML="";draw()};
+function open(i){const d=D[i],f=S.found[i];
+sheet(`<div class="big">${f?d.e:"❓"}</div><h2>${f?d.n:"Mystery "+d.c.replace(/s$/,"")}</h2><p>${f?d.f:"Clue: "+d.f.replace(new RegExp(d.n.split(" ")[0],"gi"),"___")}</p><p style="color:var(--mu)">${f?"You found this one! 🎉":"Find it in the park and snap a photo to earn ⭐10!"}</p>
+${f&&f.img?`<img class="p" src="${f.img}">`:""}${f?"":`<label class="btn">📸 I found it!<input id="ph" type="file" accept="image/*" capture="environment" hidden></label>`}<button class="btn g" id="x">Close</button>`);
+$("#x").onclick=close;const ph=$("#ph");if(ph)ph.onchange=e=>thumb(e.target.files[0],i)}
+function thumb(file,i){if(!file)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas"),k=Math.min(1,320/im.width);c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);quiz(i,c.toDataURL("image/jpeg",.6))};im.src=r.result};r.readAsDataURL(file)}
+function quiz(i,img){const d=D[i],o=[d,...D.filter(x=>x.c==d.c&&x.id!=i).sort(()=>Math.random()-.5).slice(0,2)].sort(()=>Math.random()-.5);
+sheet(`<img class="p" src="${img}"><h3>Great photo! 🧠 Quick quiz for bonus ⭐5</h3><p>"${d.f}"</p><p>Which one is this?</p>${o.map(x=>`<button class="q" data-k="${x.id}">${x.n}</button>`).join("")}`);
+document.querySelectorAll(".q").forEach(b=>b.onclick=()=>{done(i,img,+b.dataset.k==i)})}
+function done(i,img,ok){const d=D[i],old=lvl();let g=10+(ok?5:0),sur="";
+if(Math.random()<.25){const r=Math.random();if(r<.6){const b=[20,30,50][Math.floor(Math.random()*3)];g+=b;sur=`🎁 Surprise! Mystery box gave you +${b} bonus points!`}else{const L=SH.map((s,k)=>k).filter(k=>!S.owned.includes(k));if(L.length){const k=L[Math.floor(Math.random()*L.length)];S.owned.push(k);sur=`🎁 Surprise prize! You won a free ${SH[k][0]} ${SH[k][1]}!`}else{g+=40;sur="🎁 Surprise! +40 bonus points!"}}}
+S.found[i]={img};S.pts+=g;S.tot+=g;save();const up=lvl()>old;
+sheet(`<div class="big">${d.e}</div><h2>${d.n}</h2><p>${ok?"✅ Correct! ":"Good try! "}<b>${d.f}</b></p><h3>+${g} ⭐ points!</h3>${sur?`<p style="font-size:18px">${sur}</p>`:""}${up?`<h2>🎉 Level up! You're a ${LV[lvl()]}!</h2>`:""}<button class="btn" id="x">Keep exploring</button>`);$("#x").onclick=close}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x==b));draw()});
+draw();
+</script></body></html>
